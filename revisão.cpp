@@ -56,7 +56,7 @@ void gera_arq_bin()
     fscanf(arq,"%[^|]|%[^|]|%[^|]|%d|%d", &reg.autores, &reg.titulo_livro, &reg.editora, &reg.ano, &reg.paginas);
     while(!feof(arq))
 	{
-    //	printf("%s\t%s\t%s\t%d\t%d\n",reg.autores, reg.titulo, reg.editora, reg.ano, reg.pag );
+    	//printf("%s\t%s\t%s\t%d\t%d\n",reg.autores, reg.titulo, reg.editora, reg.ano, reg.pag );
     	fwrite(&reg,sizeof(TpRegistro),1,arqBin);
     	fscanf(arq,"%[^|]|%[^|]|%[^|]|%d|%d", &reg.autores, &reg.titulo_livro, &reg.editora, &reg.ano, &reg.paginas);
     };
@@ -268,7 +268,7 @@ TpEditora *gera_est_din(TpEditora *E, TpAutor *A)
 		
 		LA = l->pListaAutor;
 		i = 0;
-		while(reg.autores[i] != '|')
+		while(reg.autores[i] != '\0')
 		{
 			aux = reg.autores[i];
 			for(j = 0;aux != ','; j++)
@@ -276,14 +276,14 @@ TpEditora *gera_est_din(TpEditora *E, TpAutor *A)
 				str1[j] = aux; 
 				aux = reg.autores[++i];
 			}
-			str1[++j] = '/0';
+			str1[++j] = '\0';
 			
-			for(j = 0; aux != ';' || aux != '|' ; j++)
+			for(j = 0; aux != ';' || aux != '\0' ; j++)
 			{
 				str2[j] = aux;
 				aux = reg.autores[++i];
 			}
-			str2[++j] = '/0';
+			str2[++j] = '\0';
 			
 			
 			if(LA == NULL || BuscaLis(str1,LA) == NULL)
@@ -300,12 +300,36 @@ TpEditora *gera_est_din(TpEditora *E, TpAutor *A)
 			
 		}
 	}
-	
-	
-	
+	fclose(Ptr);
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void RelEdi(TpEditora *edi)
+{
+	TpEditora *e = edi;
+	TpLivros *l;
+	TpLisAut *la;
+	
+	while(e != NULL)
+	{
+		printf("/n/n/n%s/n/n",e->editora);
+		l = e->livros;
+		while(l != NULL)
+		{
+			printf("%s/t%d/t%d/n",l->titulo,l->paginas,l->ano);
+			la = l->pListaAutor;
+			while(la != NULL)
+			{
+				printf("%s,%s/t",la->autor->sobrenome,la->autor->nome);
+			}
+			printf("/n/n");
+			l = l->prox;
+		} 
+		e = e->prox;
+	}
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 
@@ -317,8 +341,14 @@ TpEditora *gera_est_din(TpEditora *E, TpAutor *A)
 
 int main(void)
 {
+	TpEditora *E;
+	TpAutor *A;
 	gera_arq_bin();
 	imprime();
+	
+	gera_est_din(E,A);
+	RelEdi(E);
+	
 	return 0;
 }
 
