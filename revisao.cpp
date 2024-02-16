@@ -1,5 +1,7 @@
 #include<stdio.h>
 #include<string.h>
+#include <conio2.h>
+#include <ctype.h>
 
 struct TpRegistro 
 {
@@ -34,6 +36,12 @@ struct TpEditora
 	TpLivros *livros;
 };
 
+struct TpDesc
+{
+	TpEditora *editora;
+	TpAutor *autor;
+};
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void imprime()
@@ -45,7 +53,8 @@ void imprime()
 	{	
     	printf("%s\n%s\n%s\t%d\t%d\n\n",reg.autores, reg.titulo_livro, reg.editora, reg.ano, reg.paginas);
         fread(&reg,sizeof(TpRegistro),1,arqBin);
-    }  
+    } 
+    fclose(arqBin);
 }
 
 void gera_arq_bin()
@@ -53,16 +62,15 @@ void gera_arq_bin()
 	FILE *arq = fopen("livros.txt","r");
     TpRegistro reg;
     FILE *arqBin = fopen("livros.dat","wb");
-    fscanf(arq,"%[^|]|%[^|]|%[^|]|%d|%d", &reg.autores, &reg.titulo_livro, &reg.editora, &reg.ano, &reg.paginas);
+    fscanf(arq,"%[^|]|%[^|]|%[^|]|%d|%d\n", &reg.autores, &reg.titulo_livro, &reg.editora, &reg.ano, &reg.paginas);
     while(!feof(arq))
 	{
     	//printf("%s\t%s\t%s\t%d\t%d\n",reg.autores, reg.titulo, reg.editora, reg.ano, reg.pag );
     	fwrite(&reg,sizeof(TpRegistro),1,arqBin);
-    	fscanf(arq,"%[^|]|%[^|]|%[^|]|%d|%d", &reg.autores, &reg.titulo_livro, &reg.editora, &reg.ano, &reg.paginas);
+    	fscanf(arq,"%[^|]|%[^|]|%[^|]|%d|%d\n", &reg.autores, &reg.titulo_livro, &reg.editora, &reg.ano, &reg.paginas);
     };
     fclose(arq);
     fclose(arqBin);
-    printf("\n\nConcluido\n");
 		
 }
 
@@ -89,10 +97,10 @@ TpLivros *NovaCaixaLiv(TpRegistro reg)
 	return NC;
 }
 
-TpLisAut *NovaCaixaLis()
+TpLisAut *NovaCaixaLis(TpAutor *aut)
 {
 	TpLisAut *NC = new TpLisAut;
-	NC->autor = NULL;
+	NC->autor = aut;
 	NC->prox = NULL;
 	return NC;
 }
@@ -110,67 +118,47 @@ TpAutor *NovaCaixaAut(char nome[30], char sobrenome[30])    //lembrar de separa 
 
 TpEditora *BuscaEdi(char edi[30], TpEditora *p)
 {
-	TpEditora *aux;
-	
-	if(p == NULL)
-		return NULL;
-	else
-	{
-		aux = p;
-		while(aux != NULL && strcmp(aux->editora,edi) != 0)
-			aux = aux->prox;
-		return aux;
-	}
+	while(p != NULL && stricmp(p -> editora, edi) != 0)
+		p = p -> prox;
+	return p;
 }
 
 TpLivros *BuscaLiv(char liv[30], TpLivros *p)
 {
-	TpLivros *aux;
-	
-	if(p == NULL)
-		return NULL;
-	else
-	{
-		aux = p;
-		while(aux != NULL && strcmp(aux->titulo,liv) != 0)
-			aux = aux->prox;
-		return aux;
-	}
+	while(p != NULL && stricmp(p -> titulo, liv) != 0)
+		p = p -> prox;
+	return p;
 }
 
-TpLisAut *BuscaLis(char sNome[30], TpLisAut *p)
+TpLisAut *BuscaLis(char nome[30], char sobrenome[30], TpLisAut *p)
 {
-	TpLisAut *aux;
-	TpAutor *aux2;
-	
-	if(p == NULL)
-		return NULL;
-	else
-	{
-		aux = p;
-		aux2 = p->autor;
-		while(aux != NULL && strcmp(aux2->sobrenome,sNome) != 0)
-		{
-			aux = aux->prox;
-			aux2 = aux->autor;
-		}
-		return aux;
-	}
+//  TpLisAut *aux = NULL;
+//	TpAutor *aux2;
+//	
+//	if(p == NULL)
+//		return NULL;
+//	else
+//	{
+//		aux = p;
+//		aux2 = p->autor;
+//		while(aux != NULL && strcmp(aux2->sobrenome,sNome) != 0)
+//		{
+//			aux = aux->prox;
+//			aux2 = aux->autor;
+//		}
+//	}
+//	return aux;
+
+	while(p != NULL && (stricmp(p -> autor -> nome, nome) != 0 || stricmp(p -> autor -> sobrenome, sobrenome) != 0))
+		p = p -> prox;
+	return p;
 }
 
-TpAutor *BuscaAut(char SobNome[30],TpAutor *p)
+TpAutor *BuscaAut(char nome[30], char sobrenome[30], TpAutor *p)
 {
-	TpAutor *aux;
-	
-	if(p == NULL)
-		return NULL;
-	else
-	{
-		aux = p;
-		while(aux != NULL && strcmp(aux->sobrenome,SobNome) != 0)
-			aux = aux->prox;	
-		return aux;
-	}
+	while(p != NULL && (stricmp(p -> nome, nome) != 0 || stricmp(p -> sobrenome, sobrenome) != 0))
+		p = p -> prox;
+	return p;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -208,12 +196,12 @@ TpLivros *InserirLiv(TpRegistro reg,TpLivros *p)
 	return p;
 }
 
-TpLisAut *InserirLis(TpLisAut *p)
+TpLisAut *InserirLis(TpLisAut *p, TpAutor *aut)
 {
-	TpLisAut *aux, *NC = NovaCaixaLis();
+	TpLisAut *aux, *NC = NovaCaixaLis(aut);
 	
-	if(p = NULL)
-		return NULL;
+	if(p == NULL)
+		p = NC;
 	else
 	{
 		aux = p;
@@ -242,13 +230,13 @@ TpAutor *InserirAut(char nome[30], char sobreNome[30], TpAutor *p)
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-TpEditora *gera_est_din(TpEditora *E, TpAutor *A)
+void *gera_est_din(TpDesc &desc)
 {
 	FILE *Ptr = fopen("livros.dat","rb");
 	TpRegistro reg;
 	TpEditora *e;
 	TpLivros *L,*l;
-	TpLisAut *LA, *la;
+	TpLisAut **LA, *la;
 	TpAutor *a;
 	int i, j;
 	char aux, str1[30], str2[30];
@@ -256,74 +244,71 @@ TpEditora *gera_est_din(TpEditora *E, TpAutor *A)
 	fread(&reg,sizeof(TpRegistro),1,Ptr);
 	while(!feof(Ptr))
 	{
-		if(E == NULL || BuscaEdi(reg.editora,E) == NULL)
-			E = InserirEdi(reg.editora,E);
-		e = BuscaEdi(reg.editora,E);
+		if(desc.editora == NULL || BuscaEdi(reg.editora,desc.editora) == NULL)
+			desc.editora = InserirEdi(reg.editora,desc.editora);
+		e = BuscaEdi(reg.editora,desc.editora);
 		
-		L = e->livros;
-		if(L == NULL || BuscaLiv(reg.titulo_livro,L) == NULL)
-			L = InserirLiv(reg,L);
-		l = BuscaLiv(reg.titulo_livro,L);
+		e->livros;
+		if(e->livros == NULL || BuscaLiv(reg.titulo_livro,e->livros) == NULL)
+			e -> livros = InserirLiv(reg,e->livros);
+		l = BuscaLiv(reg.titulo_livro,e->livros);
 		
-		
-		LA = l->pListaAutor;
 		i = 0;
+		
+		l->pListaAutor;
 		while(reg.autores[i] != '\0')
 		{
 			aux = reg.autores[i];
 			for(j = 0;aux != ','; j++)
 			{
-				str1[j] = aux; 
+				if(toupper(aux) >= 'A' && toupper(aux) <= 'Z' || aux == '.');
+					str1[j] = aux; 
 				aux = reg.autores[++i];
 			}
-			str1[++j] = '\0';
+			str1[j] = '\0';
 			
-			for(j = 0; aux != ';' || aux != '\0' ; j++)
+			for(j = 0; aux != ';' && aux != '\0' ; j++)
 			{
-				str2[j] = aux;
+				if(toupper(aux) >= 'A' && toupper(aux) <= 'Z' || aux == '.');
+					str2[j] = aux;
 				aux = reg.autores[++i];
 			}
-			str2[++j] = '\0';
+			str2[j] = '\0';
 			
+			if(desc.autor == NULL || BuscaAut(str2, str1,desc.autor) == NULL)
+				desc.autor = InserirAut(str2,str1,desc.autor);
 			
-			if(LA == NULL || BuscaLis(str1,LA) == NULL)
-				InserirLis(LA);
-			
-			
-			if(A == NULL || BuscaAut(str1,A) == NULL)
-				A = InserirAut(str2,str1,A);
-			
-			la = BuscaLis(str1,LA);
-			la->autor = BuscaAut(str1,A);
-			
-			
-			
+			if(l->pListaAutor == NULL || BuscaLis(str2, str1, l->pListaAutor) == NULL)
+				l->pListaAutor = InserirLis(l->pListaAutor, BuscaAut(str2, str1, desc.autor));
 		}
+		fread(&reg,sizeof(TpRegistro),1,Ptr);
 	}
 	fclose(Ptr);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void RelEdi(TpEditora *edi)
+void RelEdi(TpDesc desc)
 {
-	TpEditora *e = edi;
+	TpEditora *e = desc.editora;
 	TpLivros *l;
 	TpLisAut *la;
 	
+	clrscr();
 	while(e != NULL)
 	{
-		printf("/n/n/n%s/n/n",e->editora);
+		printf("\n%s\n",e->editora);
 		l = e->livros;
 		while(l != NULL)
 		{
-			printf("%s/t%d/t%d/n",l->titulo,l->paginas,l->ano);
+			printf("%s\t%d\t%d\n",l->titulo,l->paginas,l->ano);
 			la = l->pListaAutor;
 			while(la != NULL)
 			{
-				printf("%s,%s/t",la->autor->sobrenome,la->autor->nome);
+				printf("%s,%s\t",la->autor->sobrenome,la->autor->nome);
+				la = la -> prox;
 			}
-			printf("/n/n");
+			printf("\n");
 			l = l->prox;
 		} 
 		e = e->prox;
@@ -341,17 +326,17 @@ void RelEdi(TpEditora *edi)
 
 int main(void)
 {
-	TpEditora *E;
-	TpAutor *A;
+	TpDesc desc;
+	desc.autor = NULL;
+	desc.editora = NULL;
 	gera_arq_bin();
-	imprime();
+	//imprime();
 	
-	gera_est_din(E,A);
-	RelEdi(E);
+	gera_est_din(desc);
+	RelEdi(desc);
 	
 	return 0;
 }
-
 
 
 
